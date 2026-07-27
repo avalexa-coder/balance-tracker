@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="apple-mobile-web-app-title" content="Баланс-трекер" />
+<meta name="theme-color" content="#14161B" />
+<title>Баланс-трекер</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%2314161B'/%3E%3Ccircle cx='58' cy='58' r='16' fill='%237C93A8'/%3E%3Ccircle cx='122' cy='58' r='16' fill='%23C9A15A'/%3E%3Ccircle cx='58' cy='122' r='16' fill='%239B7C96'/%3E%3Ccircle cx='122' cy='122' r='16' fill='%238FA087'/%3E%3C/svg%3E" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #14161B; color: #E3E8F0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .serif { font-family: 'Newsreader', Georgia, serif; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 60px; }
+  .topbar { background: #14161B; margin: 0 -20px; padding: 32px 20px 20px;
+    border-bottom: 1px solid #262D38; }
+  h1 { font-size: 30px; font-style: italic; font-weight: 400; margin: 0; color: #EEF2F9; }
+  .eyebrow { font-size: 11px; letter-spacing: 2px; color: #7C8798; text-transform: uppercase; margin-bottom: 6px; }
+  .tabs { display: flex; gap: 4px; margin: 28px 0; border-bottom: 1px solid #2A313C; }
+  .tab { display: flex; align-items: center; gap: 6px; background: transparent; border: none;
+    border-bottom: 2px solid transparent; color: #7C8798; padding: 10px 14px; font-size: 13px;
+    font-weight: 500; cursor: pointer; font-family: inherit; }
+  .tab.active { color: #E3E8F0; border-bottom-color: #E3E8F0; }
+  .tab svg { width: 14px; height: 14px; }
+  .datebar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+  .datelabel { font-size: 17px; color: #EEF2F9; }
+  .picker { position: relative; display: inline-flex; align-items: center; gap: 8px;
+    background: #E3E8F0; border: 1px solid #C3CBD8; border-radius: 8px; padding: 8px 12px;
+    color: #14161B; font-weight: 600; font-size: 13px; }
+  .picker .ptext { color: #14161B; }
+  .picker .pico { display: inline-flex; color: #14161B; }
+  .picker input[type=date] { position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; margin: 0; border: 0; padding: 0; cursor: pointer; color-scheme: light; }
+  .card { background: #1B1F27; border: 1px solid #2A313C; border-radius: 12px; padding: 18px 20px;
+    border-left: 3px solid #3A414E; margin-bottom: 14px; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .card-title { font-size: 15px; font-weight: 500; color: #EEF2F9; }
+  .card-hint { font-size: 11px; color: #7C8798; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .seg button { background: #14161B; color: #A3AEBE; border: 1px solid #313947; border-radius: 8px;
+    padding: 10px 8px; font-size: 12.5px; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .seg button:focus-visible { outline: 2px solid #E3E8F0; outline-offset: 2px; }
+  .src-block { margin-top: 14px; padding-top: 14px; border-top: 1px solid #262D38; }
+  .src-caption { font-size: 11.5px; color: #7C8798; margin-bottom: 8px; }
+  .src-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .src-grid button { display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: #14161B; color: #A3AEBE; border: 1px solid #313947; border-radius: 8px;
+    padding: 8px 6px; font-size: 12px; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .src-grid .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .src-grid .top { display: flex; align-items: center; gap: 5px; }
+  .src-grid .desc { font-size: 9.5px; color: #7C8798; }
+  .saved { margin-top: 18px; display: flex; align-items: center; gap: 6px; font-size: 12px;
+    color: #8FA087; min-height: 18px; opacity: 0; transition: opacity .2s; }
+  .saved.show { opacity: 1; }
+  .hist-row { display: flex; align-items: center; justify-content: space-between; background: #1B1F27;
+    border: 1px solid #2A313C; border-radius: 10px; padding: 12px 16px; margin-bottom: 6px; }
+  .hist-date { font-size: 12px; color: #C3CBD8; }
+  .circles { display: flex; gap: 4px; }
+  .circ-wrap { position: relative; }
+  .circ { width: 21px; height: 21px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 700; }
+  .circ.empty { background: #222732; color: #3F4855; border: 1px solid #313947; }
+  .src-badge { position: absolute; bottom: -1px; right: -1px; width: 8px; height: 8px;
+    border-radius: 50%; border: 2px solid #1B1F27; }
+  .chart-card { background: #1B1F27; border: 1px solid #2A313C; border-radius: 12px;
+    padding: 16px 18px 6px; margin-bottom: 22px; }
+  .chart-title { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .chart-title .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .chart-title span { font-size: 13.5px; font-weight: 500; color: #EEF2F9; }
+  .ovtoggles { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .ovtoggles button { display: inline-flex; align-items: center; gap: 6px; background: #1B1F27;
+    color: #A3AEBE; border: 1px solid #313947; border-radius: 20px; padding: 6px 12px;
+    font-size: 11.5px; cursor: pointer; font-family: inherit; }
+  .ovtoggles button.on { color: #EEF2F9; }
+  .ovtoggles .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .modes { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .modes button { background: #1B1F27; color: #A3AEBE; border: 1px solid #313947;
+    border-radius: 7px; padding: 7px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .modes button.on { background: #E3E8F0; color: #14161B; border-color: #E3E8F0; font-weight: 600; }
+  .modehint { font-size: 11px; color: #7C8798; margin: -10px 2px 18px; line-height: 1.5; }
+  .delta { font-size: 11.5px; color: #7C8798; padding: 2px 2px 10px; }
+  .delta b { color: #EEF2F9; font-weight: 600; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 2px 8px; font-size: 11px; color: #7C8798; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .empty-note { color: #7C8798; font-size: 14px; }
+  .stat { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 2px 2px 10px; }
+  .stat .big { font-family: 'Newsreader', serif; font-size: 22px; color: #EEF2F9; }
+  .stat .lbl { font-size: 12px; color: #7C8798; }
+  .cloudbar { margin-top: 30px; padding-top: 14px; border-top: 1px solid #262D38;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    flex-wrap: wrap; font-size: 11px; color: #7C8798; line-height: 1.5; }
+  .backup { display: flex; gap: 8px; }
+  .backup button { background: transparent; color: #A3AEBE; border: 1px solid #313947;
+    border-radius: 7px; padding: 6px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="eyebrow mono">Ежедневный чек-ин</div>
+    <h1 class="serif">Баланс-трекер</h1>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+  <div class="cloudbar">
+    <span id="cloudstatus">…</span>
+    <span class="backup">
+      <button id="btn-export">Скачать копию</button>
+      <button id="btn-import">Загрузить копию</button>
+      <input type="file" id="file-import" accept="application/json" hidden />
+    </span>
+  </div>
+</div>
+
+<script type="module">
+/* ============================================================
+   ОБЛАЧНОЕ ХРАНЕНИЕ (Firebase)
+   Вставь сюда блок из консоли Firebase — шаг 4 инструкции.
+   Пока поля пустые, трекер работает только на этом устройстве.
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDELB81s9-HQ_2umPEl6PL7YFZ_rLkx02A",
+  authDomain: "balance-tracker-9acd3.firebaseapp.com",
+  projectId: "balance-tracker-9acd3",
+  storageBucket: "balance-tracker-9acd3.firebasestorage.app",
+  messagingSenderId: "870905108477",
+  appId: "1:870905108477:web:aa4ac0623a6b8b0b2dab94"
+};
+// Личный ключ пространства данных. Работает как пароль:
+// одинаковый ключ на всех твоих устройствах = одни и те же данные.
+const SPACE_ID = "alexa-balance-9f3c7a21be";
+
+const CATEGORIES = [
+  { key:"productivity", title:"Продуктивность", hint:"плюс = хорошо", color:"#7C93A8" },
+  { key:"nutrition",    title:"Питание и вес",  hint:"плюс = набираю", color:"#C9A15A" },
+  { key:"emotional",    title:"Эмоциональный фон", hint:"плюс = хорошо", color:"#9B7C96" },
+  { key:"selfcare",     title:"Уход за собой",  hint:"плюс = да",   color:"#8FA087" },
+  { key:"energy",       title:"Уровень энергии", hint:"плюс = заряд, минус = накрыло", color:"#8B7BB5" },
+  { key:"rest",         title:"Отдых",          hint:"плюс = отдохнула", color:"#5F9EA6" },
+  { key:"body",         title:"Рельеф и сила",  hint:"плюс = скульптурнее, сильнее", color:"#C0796B" },
+];
+const LABELS = { "1":"Плюс", "0":"Нейтрально", "-1":"Минус" };
+const SYMBOLS = { "1":"+", "0":"•", "-1":"–" };
+const EMO_SOURCES = [
+  { key:"external", label:"Внешний",    color:"#C98A5A", desc:"события / люди" },
+  { key:"internal", label:"Внутренний", color:"#6E8CA8", desc:"без внешних причин" },
+  { key:"both",     label:"Оба",        color:"#9B7C96", desc:"и то, и другое" },
+];
+const STORE = "balance-entries-v1";
+
+// --- state ---
+let entries = {};
+try { const raw = localStorage.getItem(STORE); if (raw) entries = JSON.parse(raw); } catch(e) { entries = {}; }
+let tab = "mark";
+let selectedDate = todayStr();
+let trendMode = "cumulative";  // cumulative | average | daily
+
+// --- cloud layer ---
+const CLOUD_ON = !!(FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.apiKey);
+let cloudDoc = null;          // Firestore document reference
+let cloudState = CLOUD_ON ? "connecting" : "local";
+let applyingRemote = false;   // guard so remote updates don't echo back
+
+function setCloudState(s) { cloudState = s; paintStatus(); }
+
+function paintStatus() {
+  const n = document.getElementById("cloudstatus");
+  if (!n) return;
+  const map = {
+    connecting: ["Подключение к облаку…", "#7C8798"],
+    synced:     ["Синхронизировано", "#5F9EA6"],
+    saving:     ["Сохранение…", "#7C8798"],
+    offline:    ["Нет сети — сохранено на устройстве, отправится позже", "#C0796B"],
+    error:      ["Облако недоступно — данные сохраняются на устройстве", "#C0796B"],
+    local:      ["Локальный режим — данные только на этом устройстве", "#7C8798"],
+  };
+  const [txt, col] = map[cloudState] || map.local;
+  n.textContent = txt;
+  n.style.color = col;
+}
+
+function saveLocal() { try { localStorage.setItem(STORE, JSON.stringify(entries)); } catch(e){} }
+
+function save() {
+  saveLocal();                       // всегда пишем локально — мгновенно и без сети
+  if (!cloudDoc || applyingRemote) return;
+  setCloudState("saving");
+  cloudSet(cloudDoc, { entries, updatedAt: Date.now() })
+    .then(()=> setCloudState("synced"))
+    .catch(()=> setCloudState("offline"));
+}
+
+// Слияние облака и устройства: берём по дню более полную запись,
+// чтобы отметки, сделанные офлайн, не затирались и наоборот.
+function mergeEntries(localE, remoteE) {
+  const out = Object.assign({}, remoteE);
+  Object.keys(localE).forEach(date=>{
+    const l = localE[date], r = remoteE[date];
+    if (!r) { out[date] = l; return; }
+    if (Object.keys(l).length > Object.keys(r).length) out[date] = Object.assign({}, r, l);
+  });
+  return out;
+}
+
+let cloudSet = null;
+async function initCloud() {
+  if (!CLOUD_ON) { paintStatus(); return; }
+  try {
+    const appMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const fsMod  = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const app = appMod.initializeApp(FIREBASE_CONFIG);
+    const db = fsMod.initializeFirestore(app, {});
+    try { await fsMod.enableIndexedDbPersistence(db); } catch(e) { /* офлайн-кэш необязателен */ }
+    cloudDoc = fsMod.doc(db, "trackers", SPACE_ID);
+    cloudSet = (ref, data)=> fsMod.setDoc(ref, data, { merge: true });
+
+    fsMod.onSnapshot(cloudDoc, (snap)=>{
+      const remote = (snap.exists() && snap.data().entries) ? snap.data().entries : {};
+      const merged = mergeEntries(entries, remote);
+      const changed = JSON.stringify(merged) !== JSON.stringify(entries);
+      entries = merged;
+      saveLocal();
+      setCloudState(snap.metadata.fromCache ? "offline" : "synced");
+      if (changed) render();
+      // если на устройстве было больше, чем в облаке — до-заливаем
+      if (JSON.stringify(merged) !== JSON.stringify(remote)) {
+        cloudSet(cloudDoc, { entries: merged, updatedAt: Date.now() }).catch(()=>{});
+      }
+    }, ()=> setCloudState("error"));
+  } catch (e) {
+    setCloudState("error");
+  }
+}
+
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `balance-backup-${todayStr()}.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+
+function importBackup(file) {
+  const r = new FileReader();
+  r.onload = ()=>{
+    try {
+      const data = JSON.parse(r.result);
+      if (typeof data !== "object" || !data) throw new Error("bad");
+      entries = mergeEntries(data, entries);
+      save(); render();
+    } catch(e) { alert("Не удалось прочитать файл резервной копии."); }
+  };
+  r.readAsText(file);
+}
+function todayStr() {
+  const d = new Date(); const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off*60000).toISOString().slice(0,10);
+}
+function fmtDate(s) {
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric",weekday:"short"});
+}
+function fmtChip(s) {
+  const [y,m,d] = s.split("-");
+  return `${d}.${m}.${y}`;
+}
+function fmtShort(s) {
+  const [y,m,d] = s.split("-").map(Number);
+  const mon = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"][m-1];
+  return `${d} ${mon} ${String(y).slice(2)}`;
+}
+function plural(n, forms) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a>10 && a<20) return forms[2];
+  if (b>1 && b<5) return forms[1];
+  if (b===1) return forms[0];
+  return forms[2];
+}
+function daysBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+function el(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; }
+
+// --- icons ---
+const ICON = {
+  mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>',
+  trends:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>',
+  check:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>',
+};
+
+// --- render ---
+function renderTabs() {
+  const bar = document.getElementById("tabs");
+  bar.innerHTML = "";
+  [["mark","Отметить день"],["history","История"],["trends","Тренды"]].forEach(([k,label])=>{
+    const b = el(`<button class="tab ${tab===k?"active":""}">${ICON[k]}<span>${label}</span></button>`);
+    b.onclick = ()=>{ tab=k; render(); };
+    bar.appendChild(b);
+  });
+}
+
+function render() {
+  renderTabs();
+  const v = document.getElementById("view");
+  v.innerHTML = "";
+  if (tab==="mark") v.appendChild(renderMark());
+  else if (tab==="history") v.appendChild(renderHistory());
+  else v.appendChild(renderTrends());
+}
+
+function renderMark() {
+  const root = el('<div></div>');
+  const cur = entries[selectedDate] || {};
+
+  const bar = el(`<div class="datebar">
+    <div><div class="eyebrow mono">Дата</div><div class="datelabel serif">${fmtDate(selectedDate)}</div></div>
+  </div>`);
+  const CAL = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#14161B" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+  const picker = el(`<div class="picker"><span class="ptext">${fmtChip(selectedDate)}</span><span class="pico">${CAL}</span></div>`);
+  const input = el(`<input type="date" value="${selectedDate}" max="${todayStr()}">`);
+  input.onchange = (e)=>{ selectedDate = e.target.value || todayStr(); render(); };
+  picker.appendChild(input);
+  bar.appendChild(picker);
+  root.appendChild(bar);
+
+  CATEGORIES.forEach(cat=>{
+    const card = el(`<div class="card" style="border-left-color:${cat.color}">
+      <div class="card-head"><div class="card-title">${cat.title}</div><div class="card-hint">${cat.hint}</div></div>
+    </div>`);
+    const seg = el('<div class="seg"></div>');
+    [1,0,-1].forEach(val=>{
+      const active = cur[cat.key]===val;
+      const btn = el(`<button>${LABELS[val]}</button>`);
+      if (active) { btn.style.background=cat.color; btn.style.color="#14161B"; btn.style.borderColor=cat.color; btn.style.fontWeight=600; }
+      btn.onclick = ()=>setValue(cat.key, active?undefined:val);
+      seg.appendChild(btn);
+    });
+    card.appendChild(seg);
+
+    if (cat.key==="emotional") {
+      const block = el(`<div class="src-block"><div class="src-caption">Источник — что повлияло на состояние</div></div>`);
+      const grid = el('<div class="src-grid"></div>');
+      EMO_SOURCES.forEach(src=>{
+        const active = cur.emotionalSource===src.key;
+        const btn = el(`<button title="${src.desc}"><span class="top"><span class="dot" style="background:${src.color}"></span>${src.label}</span><span class="desc">${src.desc}</span></button>`);
+        if (active) { btn.style.background="#262E3A"; btn.style.color="#EEF2F9"; btn.style.borderColor=src.color; btn.style.fontWeight=600; }
+        btn.onclick = ()=>setValue("emotionalSource", active?undefined:src.key);
+        grid.appendChild(btn);
+      });
+      block.appendChild(grid);
+      card.appendChild(block);
+    }
+    root.appendChild(card);
+  });
+
+  const saved = el(`<div class="saved" id="saved">${ICON.check} Сохранено</div>`);
+  root.appendChild(saved);
+  return root;
+}
+
+function setValue(field, value) {
+  const day = Object.assign({}, entries[selectedDate] || {});
+  if (value===undefined) delete day[field]; else day[field]=value;
+  if (Object.keys(day).length) entries[selectedDate]=day; else delete entries[selectedDate];
+  save();
+  render();
+  const s = document.getElementById("saved");
+  if (s) { s.classList.add("show"); setTimeout(()=>s.classList.remove("show"), 900); }
+}
+
+function renderHistory() {
+  const dates = Object.keys(entries).sort((a,b)=>a<b?1:-1);
+  if (!dates.length) return el('<div class="empty-note">Пока нет ни одной отметки. Начните с вкладки «Отметить день».</div>');
+  const root = el('<div></div>');
+  dates.forEach(date=>{
+    const e = entries[date];
+    const row = el(`<div class="hist-row"><div class="hist-date mono">${fmtShort(date)}</div></div>`);
+    const circles = el('<div class="circles"></div>');
+    CATEGORIES.forEach(cat=>{
+      const v = e[cat.key]; const has = v!==undefined;
+      const src = (cat.key==="emotional" && e.emotionalSource) ? EMO_SOURCES.find(s=>s.key===e.emotionalSource) : null;
+      const wrap = el('<div class="circ-wrap"></div>');
+      const c = el(`<div class="circ ${has?"":"empty"}" title="${cat.title}${src?" · "+src.label.toLowerCase():""}">${has?SYMBOLS[v]:"·"}</div>`);
+      if (has) { c.style.background=cat.color; c.style.color="#14161B"; }
+      wrap.appendChild(c);
+      if (src) wrap.appendChild(el(`<span class="src-badge" style="background:${src.color}"></span>`));
+      circles.appendChild(wrap);
+    });
+    row.appendChild(circles);
+    root.appendChild(row);
+  });
+  return root;
+}
+
+function smoothPath(pts) {
+  if (pts.length < 2) return "";
+  if (pts.length === 2) return `M${pts[0].x},${pts[0].y} L${pts[1].x},${pts[1].y}`;
+  let d = `M${pts[0].x},${pts[0].y}`;
+  for (let i=0; i<pts.length-1; i++) {
+    const p0 = pts[i-1]||pts[i], p1 = pts[i], p2 = pts[i+1], p3 = pts[i+2]||p2;
+    const c1x = p1.x + (p2.x-p0.x)/6, c1y = p1.y + (p2.y-p0.y)/6;
+    const c2x = p2.x - (p3.x-p1.x)/6, c2y = p2.y - (p3.y-p1.y)/6;
+    d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
+function energyStats() {
+  const all = Object.keys(entries).filter(d=>entries[d].energy!==undefined).sort();
+  const low = all.filter(d=>entries[d].energy === -1);
+  if (!all.length || !low.length) return { lowCount: low.length, spanDays: 0, freq: 0 };
+  const spanDays = daysBetween(all[0], all[all.length-1]) + 1;
+  const freq = spanDays / low.length;
+  return { lowCount: low.length, spanDays, freq };
+}
+
+const MODE_INFO = {
+  cumulative: ["Накопительно", "Каждый плюс поднимает линию на шаг вверх, минус — вниз, нейтрально держит на месте. Линия растёт, если плюсов со временем больше, чем минусов. Так виден именно прогресс, а не отдельный день."],
+  average:    ["Среднее за 7 дней", "Средний уровень за последнюю неделю. Сглаживает случайные дни и показывает, на каком уровне ты держишься сейчас: выше нуля — период скорее в плюс."],
+  daily:      ["По дням", "Каждый день сам по себе: плюс, нейтрально или минус."],
+  overlay:    ["Наложение", "Все направления на одном графике (сглажено за 7 дней). Включай нужные, чтобы сравнить пару: отдых и энергию, тренировки и вес. Когда линии движутся вместе — есть связь."],
+};
+
+// какие направления показаны в режиме наложения
+let overlayOn = { productivity:true, energy:true, rest:true, body:true, nutrition:false, emotional:false, selfcare:false };
+
+function seriesFor(catKey, dates) {
+  // Значения по дням, где отметка есть
+  const raw = dates.map(d => ({ date: d, v: entries[d][catKey] }))
+                   .filter(x => x.v !== undefined && x.v !== null);
+  if (trendMode === "daily") return raw.map(x => ({ date: x.date, y: x.v }));
+  if (trendMode === "cumulative") {
+    let sum = 0;
+    return raw.map(x => { sum += x.v; return { date: x.date, y: sum }; });
+  }
+  // скользящее среднее по 7 последним отметкам
+  return raw.map((x, i) => {
+    const win = raw.slice(Math.max(0, i - 6), i + 1);
+    return { date: x.date, y: win.reduce((s, p) => s + p.v, 0) / win.length };
+  });
+}
+
+function renderOverlay(dates, xAt, W, padL, padR, padT, innerH) {
+  const box = el('<div></div>');
+
+  // тумблеры направлений
+  const toggles = el('<div class="ovtoggles"></div>');
+  CATEGORIES.forEach(cat=>{
+    const on = !!overlayOn[cat.key];
+    const b = el(`<button class="${on?"on":""}" style="border-color:${on?cat.color:"#313947"}">
+      <span class="dot" style="background:${cat.color};opacity:${on?1:0.35}"></span>${cat.title}</button>`);
+    b.onclick = ()=>{ overlayOn[cat.key] = !overlayOn[cat.key]; render(); };
+    toggles.appendChild(b);
+  });
+  box.appendChild(toggles);
+
+  // единая шкала: скользящее среднее -> все в диапазоне -1..+1
+  const H = 190, padB = 20;
+  const yAt = (val)=> padT + innerH*1.6 * (1 - (val+1)/2);
+  const H2 = padT + innerH*1.6 + padB;
+  let svg = `<svg viewBox="0 0 ${W} ${H2}" width="100%" height="${H2}" preserveAspectRatio="xMidYMid meet">`;
+  [1,0,-1].forEach(g=>{
+    const y = yAt(g);
+    svg += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${g===0?"#313947":"#222732"}" stroke-width="1"/>`;
+    svg += `<text x="4" y="${y+3}" fill="#7C8798" font-size="10" font-family="IBM Plex Mono, monospace">${g===1?"+":g===-1?"–":"0"}</text>`;
+  });
+  CATEGORIES.forEach(cat=>{
+    if (!overlayOn[cat.key]) return;
+    const raw = dates.map((d,i)=>({i, v: entries[d][cat.key]})).filter(x=>x.v!==undefined && x.v!==null);
+    if (raw.length < 2) return;
+    const pts = raw.map((x,k)=>{
+      const win = raw.slice(Math.max(0,k-6), k+1);
+      const avg = win.reduce((s,p)=>s+p.v,0)/win.length;
+      return { x: xAt(x.i), y: yAt(avg), color: cat.color };
+    });
+    svg += `<path d="${smoothPath(pts)}" fill="none" stroke="${cat.color}" stroke-width="2" stroke-linecap="round"/>`;
+  });
+  const nn = dates.length;
+  const labelIdx = nn<=3 ? dates.map((_,i)=>i) : [0, Math.floor((nn-1)/2), nn-1];
+  labelIdx.forEach(i=>{
+    const [,m,d] = dates[i].split("-");
+    svg += `<text x="${xAt(i)}" y="${H2-6}" fill="#7C8798" font-size="10" text-anchor="middle" font-family="IBM Plex Mono, monospace">${d}.${m}</text>`;
+  });
+  svg += `</svg>`;
+  const card = el('<div class="chart-card"></div>');
+  card.appendChild(el(svg));
+  card.appendChild(el(`<div class="delta">Совет: сравнивай по 2–3 линии. Совпадают вверх-вниз — связь есть; расходятся — нет. Помни: у «Питания» плюс = набор веса.</div>`));
+  box.appendChild(card);
+  return box;
+}
+
+function renderTrends() {
+  const dates = Object.keys(entries).sort();
+  if (dates.length < 2) return el('<div class="empty-note">Пока недостаточно данных для тренда — нужно минимум две отметки в разные дни.</div>');
+  const root = el('<div></div>');
+
+  // переключатель режима
+  const modes = el('<div class="modes"></div>');
+  ["cumulative","average","daily","overlay"].forEach(m=>{
+    const b = el(`<button class="${trendMode===m?"on":""}">${MODE_INFO[m][0]}</button>`);
+    b.onclick = ()=>{ trendMode = m; render(); };
+    modes.appendChild(b);
+  });
+  root.appendChild(modes);
+  root.appendChild(el(`<div class="modehint">${MODE_INFO[trendMode][1]}</div>`));
+
+  const W = Math.min(680, (document.querySelector(".wrap").clientWidth - 40)) || 320;
+  const H = 110, padL = 30, padR = 10, padT = 12, padB = 20;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const n = dates.length;
+  const xAt = (i)=> padL + (n===1?innerW/2 : innerW * i/(n-1));
+  const idxOf = {}; dates.forEach((d,i)=> idxOf[d]=i);
+
+  if (trendMode === "overlay") { root.appendChild(renderOverlay(dates, xAt, W, padL, padR, padT, innerH)); return root; }
+
+  CATEGORIES.forEach(cat=>{
+    const isEmo = cat.key==="emotional";
+    const card = el(`<div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:${cat.color}"></span><span>${cat.title}</span></div>
+    </div>`);
+
+    const ser = seriesFor(cat.key, dates);
+
+    // шкала Y: у накопительного диапазон плавающий, у остальных -1..+1
+    let lo = -1, hi = 1;
+    if (trendMode === "cumulative" && ser.length) {
+      const ys = ser.map(p=>p.y);
+      lo = Math.min(0, ...ys); hi = Math.max(0, ...ys);
+      if (hi === lo) { hi = lo + 1; }
+      const pad = (hi - lo) * 0.15;
+      lo -= pad; hi += pad;
+    }
+    const yAt = (val)=> padT + innerH * (1 - (val - lo) / (hi - lo));
+
+    const pts = ser.map(p=>{
+      let color = cat.color;
+      if (isEmo && trendMode === "daily" && entries[p.date].emotionalSource) {
+        const s = EMO_SOURCES.find(s=>s.key===entries[p.date].emotionalSource);
+        if (s) color = s.color;
+      }
+      return { x: xAt(idxOf[p.date]), y: yAt(p.y), color };
+    });
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet">`;
+    // сетка
+    let gridVals;
+    if (trendMode === "cumulative") {
+      gridVals = [hi, 0, lo].filter((v,i,a)=> a.indexOf(v)===i);
+    } else {
+      gridVals = [1, 0, -1];
+    }
+    gridVals.forEach(g=>{
+      const y = yAt(g);
+      svg += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${Math.abs(g)<0.001?"#313947":"#222732"}" stroke-width="1"/>`;
+      let lbl;
+      if (trendMode === "cumulative") lbl = Math.round(g) === 0 ? "0" : (g > 0 ? "+" + Math.round(g) : String(Math.round(g)));
+      else lbl = g===1 ? "+" : g===-1 ? "–" : "0";
+      svg += `<text x="4" y="${y+3}" fill="#7C8798" font-size="10" font-family="IBM Plex Mono, monospace">${lbl}</text>`;
+    });
+    if (pts.length >= 2) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="${cat.color}" stroke-width="2"/>`;
+    const dotR = trendMode === "daily" ? (isEmo?4:3) : 2.5;
+    pts.forEach(p=>{ svg += `<circle cx="${p.x}" cy="${p.y}" r="${dotR}" fill="${p.color}" stroke="#1B1F27" stroke-width="1"/>`; });
+    const labelIdx = n<=3 ? dates.map((_,i)=>i) : [0, Math.floor((n-1)/2), n-1];
+    labelIdx.forEach(i=>{
+      const [,m,d] = dates[i].split("-");
+      svg += `<text x="${xAt(i)}" y="${H-6}" fill="#7C8798" font-size="10" text-anchor="middle" font-family="IBM Plex Mono, monospace">${d}.${m}</text>`;
+    });
+    svg += `</svg>`;
+    card.appendChild(el(svg));
+
+    // краткий вывод под графиком
+    if (ser.length >= 2) {
+      if (trendMode === "cumulative") {
+        const last = ser[ser.length-1].y;
+        const word = last > 0 ? "вверх" : last < 0 ? "вниз" : "на месте";
+        card.appendChild(el(`<div class="delta">Итог за период: <b>${last>0?"+":""}${last}</b> · направление ${word}</div>`));
+      } else if (trendMode === "average") {
+        const last = ser[ser.length-1].y;
+        const prev = ser[Math.max(0, ser.length-8)].y;
+        const diff = last - prev;
+        const word = diff > 0.05 ? "лучше, чем неделю назад" : diff < -0.05 ? "хуже, чем неделю назад" : "без изменений";
+        card.appendChild(el(`<div class="delta">Сейчас <b>${last.toFixed(2)}</b> · ${word}</div>`));
+      }
+    }
+
+    if (isEmo && trendMode === "daily") {
+      const legend = el('<div class="legend"></div>');
+      EMO_SOURCES.forEach(s=> legend.appendChild(el(`<span><span class="dot" style="background:${s.color}"></span>${s.label}</span>`)));
+      card.appendChild(legend);
+    }
+    if (cat.key==="energy") {
+      const st = energyStats();
+      if (st.lowCount > 0) {
+        const freqTxt = st.freq >= 2
+          ? `в среднем раз в ${st.freq < 10 ? st.freq.toFixed(1) : Math.round(st.freq)} ${plural(Math.round(st.freq),["день","дня","дней"])}`
+          : `почти каждый день`;
+        card.appendChild(el(`<div class="stat">
+          <span class="big">${st.lowCount}</span>
+          <span class="lbl">${plural(st.lowCount,["день","дня","дней"])}, когда «накрыло», за ${st.spanDays} ${plural(st.spanDays,["день","дня","дней"])} наблюдений · ${freqTxt}</span>
+        </div>`));
+      }
+    }
+    root.appendChild(card);
+  });
+  return root;
+}
+
+render();
+paintStatus();
+document.getElementById("btn-export").onclick = downloadBackup;
+document.getElementById("btn-import").onclick = ()=> document.getElementById("file-import").click();
+document.getElementById("file-import").onchange = (e)=>{ if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; };
+initCloud();
+window.addEventListener("resize", ()=>{ if (tab==="trends") render(); });
+</script>
+</body>
+</html>
